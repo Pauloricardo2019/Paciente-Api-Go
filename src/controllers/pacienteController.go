@@ -3,6 +3,8 @@ package controllers
 import (
 	"GoPacientes/src/database"
 	"GoPacientes/src/models"
+	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -21,10 +23,26 @@ func CreatePaciente(c *gin.Context) {
 		return
 	}
 
+	maxAge := 100
+
+	if pacientes.Age > maxAge {
+		c.JSON(400, gin.H{
+			"error": "Age max 100 years: ",
+		})
+		return
+	}
+
+	if len(pacientes.Email) > 50 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Max length for email is 50",
+		})
+		return
+	}
+
 	err = db.Create(&pacientes).Error
 	if err != nil {
 		c.JSON(422, gin.H{
-			"error": "Cannor create a paciente: " + err.Error(),
+			"error": "Cannot create a paciente: " + err.Error(),
 		})
 		return
 	}
@@ -88,6 +106,9 @@ func UpdatePaciente(c *gin.Context) {
 		})
 		return
 	}
+	fmt.Println(newID)
+
+	db.First(&paciente, newID)
 
 	err = c.ShouldBindJSON(&paciente)
 	if err != nil {
@@ -97,7 +118,7 @@ func UpdatePaciente(c *gin.Context) {
 		return
 	}
 
-	err = db.Save(&paciente).Where("ID = ?", newID).Error
+	err = db.Save(&paciente).Error
 	if err != nil {
 		c.JSON(422, gin.H{
 			"error": "Cannot save paciente: " + err.Error(),
